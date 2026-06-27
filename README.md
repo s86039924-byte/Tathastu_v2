@@ -14,11 +14,11 @@ student query → 3 journeys → mentor views → edits (direct + AI copilot) �
 
 | Piece | What |
 |---|---|
-| Runtime | Node.js (v18+, uses `structuredClone`/global `fetch`) |
+| Runtime | Node.js **14.20.1+** (kept Node-14-compatible: `node-fetch@2` + `abort-controller`, JSON clone instead of `structuredClone`) |
 | Web | Express 4 |
 | DB | MongoDB via Mongoose 7 |
 | Auth | JWT (`jsonwebtoken`) + `bcryptjs` |
-| LLM | OpenAI (`gpt-4o-mini` for classify/planner, `text-embedding-3-small` for vectors) |
+| LLM | OpenAI **SDK v3** (axios-based, Node 14 safe) — `gpt-4o-mini` for classify/planner, `text-embedding-3-small` for vectors |
 | Vector search | In-process cosine over `.npy` embeddings (no external vector DB) |
 
 ---
@@ -41,7 +41,7 @@ npm run dev              # nodemon (auto-reload)   |   npm start (plain node)
 | `JWT_EXPIRES_IN` | e.g. `7d` |
 | `ACADZA_MOCK_MODE` | `true` = fake DOST creation; `false` = call real Acadza |
 | `ACADZA_API_BASE_URL` | real Acadza base URL (when mock off) |
-| `OPENAI_API_KEY` | currently hard-coded in `config/openai.js` — **move to env for production** |
+| `OPENAI_API_KEY` | read from env by `config/openai.js` (no longer in code) — required for any OpenAI call |
 
 > ⚠️ After changing `.env` you must restart the server (`dotenv` reads it once at boot).
 
@@ -54,10 +54,10 @@ app.js                         # express bootstrap, connects DB, mounts routers
 config/
   db.js                        # connectDB() — mongoose connection
   openai.js                    # getOpenAI(), callOpenAI(), embed(), parseJsonResponse()
-routes/
+routes/                        # thin wiring only — guards + path → controller
   auth.routes.js               # /api/auth/*  (public)
-  mentor/index.js              # /mentor/*    (teacher JWT)
-  student/index.js             # /student/*   (student JWT)
+  mentor/index.js              # /mentor/*    (teacher JWT) → mentor.controller
+  student/index.js             # /student/*   (student JWT) → student.controller
 middleware/auth.middleware.js  # verifies JWT → req.user
 utils/jwt.js                   # generateToken()
 models/                        # Mongoose schemas: User, Session, StudentProfile, Journey
@@ -65,6 +65,8 @@ db/                            # data-access layer (plain objects, not classes)
   sessions.js  studentProfiles.js  journeys.js
 controllers/
   auth.controller.js           # register/login (+mentor), process-query, continue-followup
+  mentor.controller.js         # journeys: view/edit/move/remove/select/send/copilot (+ loadSession)
+  student.controller.js        # list sessions, get sent plan
   openaiPipeline.js            # guardrail, intent, follow-up engine, signal extraction, search-query gen
   search.js                    # multi-query + reciprocal-rank-fusion search
   vectorSearch.js              # .npy loader + cosine top-k + getChunk
@@ -244,7 +246,8 @@ curl -s $BASE/student/sessions/$SID/plan -H "Authorization: Bearer $STOK"
 
 ## 10. Known limits / TODO
 
-- **OpenAI key is hard-coded** in `config/openai.js` → move to `OPENAI_API_KEY` env.
+- **Node 14 not yet runtime-tested** — code + deps are Node-14-compatible (openai v3, polyfills), but
+  only verified on Node 18+. Run on real Node 14.20+ and hit `process-query` once to confirm.
 - **No re-send guard** — calling `/send` twice re-creates DOSTs on Acadza (duplicates). Add a `409 if already sent`.
 - **copilot `edit_field`** has no per-type validation (won't reject a field that doesn't belong to a type).
 - **Thermodynamics vs Thermochemistry** can't be cleanly separated — the index has no per-concept
