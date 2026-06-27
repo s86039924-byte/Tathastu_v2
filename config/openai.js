@@ -1,4 +1,4 @@
-const OpenAI = require('openai');
+const { Configuration, OpenAIApi } = require('openai');
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_TIMEOUT_MS = 60_000;
@@ -8,6 +8,7 @@ const OPENAI_EMBED_MODEL = 'text-embedding-3-small';
 
 let _client = null;
 
+// openai SDK v3 (axios-based) — Node 14 compatible.
 const getOpenAI = () => {
   if (_client) return _client;
 
@@ -15,10 +16,7 @@ const getOpenAI = () => {
     throw new Error('OPENAI_API_KEY is not configured. Set it in your .env file.');
   }
 
-  _client = new OpenAI({
-    apiKey: OPENAI_API_KEY,
-    timeout: OPENAI_TIMEOUT_MS,
-  });
+  _client = new OpenAIApi(new Configuration({ apiKey: OPENAI_API_KEY }));
 
   return _client;
 };
@@ -28,18 +26,21 @@ const FENCE_RE = /```(?:json)?/g;
 const callOpenAI = async (args) => {
   const model = args.model ?? OPENAI_MODEL_SIMPLE;
 
-  const response = await getOpenAI().chat.completions.create({
-    model,
-    messages: [
-      { role: 'system', content: args.system },
-      { role: 'user', content: args.user },
-    ],
-    temperature: args.temperature ?? 0.0,
-    max_tokens: args.maxTokens ?? 150,
-    ...(args.responseFormat ? { response_format: args.responseFormat } : {}),
-  });
+  const response = await getOpenAI().createChatCompletion(
+    {
+      model,
+      messages: [
+        { role: 'system', content: args.system },
+        { role: 'user', content: args.user },
+      ],
+      temperature: args.temperature ?? 0.0,
+      max_tokens: args.maxTokens ?? 150,
+      ...(args.responseFormat ? { response_format: args.responseFormat } : {}),
+    },
+    { timeout: OPENAI_TIMEOUT_MS },
+  );
 
-  const raw = (response.choices[0]?.message?.content ?? '').trim();
+  const raw = (response.data.choices[0]?.message?.content ?? '').trim();
 
   return raw
     .replace(FENCE_RE, '')
@@ -59,12 +60,15 @@ const parseJsonResponse = (raw, fallback) => {
 const embed = async (texts) => {
   const inputs = Array.isArray(texts) ? texts : [texts];
 
-  const res = await getOpenAI().embeddings.create({
-    model: OPENAI_EMBED_MODEL,
-    input: inputs,
-  });
+  const res = await getOpenAI().createEmbedding(
+    {
+      model: OPENAI_EMBED_MODEL,
+      input: inputs,
+    },
+    { timeout: OPENAI_TIMEOUT_MS },
+  );
 
-  return res.data.map((d) => {
+  return res.data.data.map((d) => {
     const v = new Float32Array(d.embedding);
 
     let norm = 0;

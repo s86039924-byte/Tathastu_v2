@@ -1,5 +1,5 @@
-const { readFile } = require('node:fs/promises');
-const path = require('node:path');
+const { readFile } = require('fs/promises');
+const path = require('path');
 
 const VECTOR_STORE = {
   tathastuIndexesDir: 'openai_subject_index',

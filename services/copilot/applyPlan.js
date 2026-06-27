@@ -1,7 +1,10 @@
-const { randomUUID } = require('node:crypto');
+const { randomUUID } = require('crypto');
 const { JourneyDB } = require('../../db/journeys');
 const { generateDostPayloads } = require('../../controllers/chanakya/integration');
 const { findConcepts } = require('./conceptFinder');
+
+// deep clone (Node 14-safe; payloads are plain JSON)
+const clone = (x) => JSON.parse(JSON.stringify(x));
 
 const normDiff = (v) => ({ easy: 'EASY', moderate: 'MODERATE', medium: 'MODERATE', hard: 'HARD', tough: 'HARD' }[String(v).toLowerCase()] ?? 'MODERATE');
 
@@ -53,7 +56,7 @@ const setField = (payload, dostType, field, value) => {
 };
 
 const addPortionItems = (payload, dostType, items) => {
-  const p = structuredClone(payload);
+  const p = clone(payload);
   if (dostType === 'concept') {
     p.meta = p.meta ?? { conceptBasketData: [] };
     p.meta.conceptBasketData = p.meta.conceptBasketData ?? [];
@@ -77,7 +80,7 @@ const addPortionItems = (payload, dostType, items) => {
 };
 
 const removePortionItem = (payload, dostType, portionIndex) => {
-  const p = structuredClone(payload);
+  const p = clone(payload);
   if (dostType === 'concept') p.meta?.conceptBasketData?.splice(portionIndex, 1);
   else if (dostType === 'formula') p.formulaCart?.splice(portionIndex, 1);
   else p.practicePortion?.splice(portionIndex, 1);
@@ -161,7 +164,7 @@ async function applyAction(sessionId, journeyType, action, profile, journey) {
         dost_type: action.dost_type,
         title: payloads[0].title ?? action.dost_type,
         payload: payloads[0],
-        original_payload: structuredClone(payloads[0]),
+        original_payload: clone(payloads[0]),
         script: '', status: 'draft',
         success: null, dost_id: null, link: null, error: null,
       };

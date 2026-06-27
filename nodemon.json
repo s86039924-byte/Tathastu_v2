@@ -1,0 +1,21 @@
+{
+  "watch": [
+    "app.js",
+    "config",
+    "controllers",
+    "db",
+    "middleware",
+    "models",
+    "routes",
+    "services",
+    "utils"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules",
+    "openai_subject_index",
+    ".git",
+    "services/journey.json",
+    "*.log"
+  ]
+}

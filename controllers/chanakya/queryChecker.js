@@ -104,13 +104,16 @@ const queryChecker = async (text, opts = {}) => {
   let content = '';
 
   try {
-    const resp = await getOpenAI().chat.completions.create({
-      model: MODEL,
-      messages,
-      temperature: 0,
-    });
+    const resp = await getOpenAI().createChatCompletion(
+      {
+        model: MODEL,
+        messages,
+        temperature: 0,
+      },
+      { timeout: 60000 },
+    );
 
-    content = stripJsonFence(resp.choices[0]?.message?.content ?? '');
+    content = stripJsonFence(resp.data.choices[0]?.message?.content ?? '');
   } catch (err) {
     console.error('[query_checker] LLM call failed:', err.message);
     return fallbackGeneralResponse();

@@ -77,15 +77,18 @@ async function callPlanner({ journey, mentorMessage, chatHistory = [] }) {
   };
   const user = `JOURNEY:\n${JSON.stringify(slim)}\n\nCHAT:\n${JSON.stringify(chatHistory.slice(-6))}\n\nMENTOR MESSAGE:\n"${mentorMessage}"`;
 
-  const resp = await getOpenAI().chat.completions.create({
-    model: MODEL,
-    temperature: 0,
-    response_format: { type: 'json_object' },
-    messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }],
-  });
+  const resp = await getOpenAI().createChatCompletion(
+    {
+      model: MODEL,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }],
+    },
+    { timeout: 60000 },
+  );
 
   try {
-    return JSON.parse(resp.choices[0]?.message?.content ?? '{}');
+    return JSON.parse(resp.data.choices[0]?.message?.content ?? '{}');
   } catch {
     return { actions: [], needs_clarification: false, summary: 'parse error' };
   }

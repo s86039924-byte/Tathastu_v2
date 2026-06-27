@@ -1,4 +1,6 @@
-const { randomUUID } = require('node:crypto');
+const { randomUUID } = require('crypto');
+const fetch = require('node-fetch');
+const { AbortController } = require('abort-controller');
 
 const ACADZA_BASE_URL =
   process.env.ACADZA_API_BASE_URL || process.env.ACADZA_BASE_URL || '';

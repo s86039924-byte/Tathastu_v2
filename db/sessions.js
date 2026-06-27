@@ -1,4 +1,4 @@
-const { randomUUID } = require('node:crypto');
+const { randomUUID } = require('crypto');
 const Session = require('../models/Session');
 
 const newId = () => randomUUID().replace(/-/g, '').slice(0, 8);

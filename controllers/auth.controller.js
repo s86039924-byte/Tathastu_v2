@@ -20,7 +20,7 @@ const {
   buildStudentProfile,
 } = require('./profileBuilder');
 
-const { randomUUID } = require('node:crypto');
+const { randomUUID } = require('crypto');
 
 const {
   saveRuntimeFollowup,

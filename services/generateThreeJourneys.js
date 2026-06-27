@@ -1,5 +1,8 @@
 const { generateDostPayloads } = require('../controllers/chanakya/integration');
 
+// deep clone (Node 14-safe; payloads are plain JSON)
+const clone = (x) => JSON.parse(JSON.stringify(x));
+
 const JOURNEY_TYPES = ['revision', 'concept', 'practice'];
 
 // Which journey best fits the student's struggle (for ranking).
@@ -139,7 +142,7 @@ const toDosts = (payloads) =>
     dost_type: payload.bulkRequestType ?? '',
     title: payload.title ?? `DOST ${index + 1}`,
     payload,
-    original_payload: structuredClone(payload),
+    original_payload: clone(payload),
     script: '',
     status: 'draft',
     success: null, dost_id: null, link: null, error: null,

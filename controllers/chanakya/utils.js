@@ -1,4 +1,4 @@
-const { randomUUID } = require('node:crypto');
+const { randomUUID } = require('crypto');
 
 const {
   isValidChapter,
