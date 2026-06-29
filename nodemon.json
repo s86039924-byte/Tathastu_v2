@@ -11,6 +11,8 @@
     "utils"
   ],
   "ext": "js,json",
+  "legacyWatch": true,
+  "pollingInterval": 500,
   "ignore": [
     "node_modules",
     "openai_subject_index",
