@@ -31,7 +31,7 @@ exports.getJourneys = async (req, res) => {
 
     const profile = await StudentProfileDB.get(session.student_id, session.session_id);
 
-    return res.status(200).json({ success: true, session, journeys: doc.journeys, profile });
+    return res.status(200).json({ success: true, session, tathastujourney: doc.journeys, profile });
   } catch (err) {
     console.error('get journeys error:', err);
     return res.status(500).json({ success: false, message: 'Server Error', error: err.message });
@@ -51,7 +51,7 @@ exports.editDostField = async (req, res) => {
       session.session_id, req.params.type, Number(req.params.idx), field, value,
     );
     if (!updated) return res.status(404).json({ success: false, message: 'Journey or card not found' });
-    return res.json({ success: true, journeys: updated.journeys });
+    return res.json({ success: true, tathastujourney: updated.journeys });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
@@ -64,7 +64,7 @@ exports.removeDost = async (req, res) => {
     if (!session) return;
     const updated = await JourneyDB.removeDost(session.session_id, req.params.type, Number(req.params.idx));
     if (!updated) return res.status(404).json({ success: false, message: 'Journey or card not found' });
-    return res.json({ success: true, journeys: updated.journeys });
+    return res.json({ success: true, tathastujourney: updated.journeys });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
@@ -79,7 +79,7 @@ exports.moveDost = async (req, res) => {
     if (!destType) return res.status(400).json({ success: false, message: 'destType is required' });
     const updated = await JourneyDB.moveDost(session.session_id, req.params.srcType, destType, Number(req.params.idx));
     if (!updated) return res.status(404).json({ success: false, message: 'Journey or card not found' });
-    return res.json({ success: true, journeys: updated.journeys });
+    return res.json({ success: true, tathastujourney: updated.journeys });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
@@ -92,7 +92,7 @@ exports.selectJourney = async (req, res) => {
     if (!session) return;
     const updated = await JourneyDB.selectJourney(session.session_id, req.params.type);
     if (!updated) return res.status(404).json({ success: false, message: 'Journey not found' });
-    return res.json({ success: true, journeys: updated.journeys });
+    return res.json({ success: true, tathastujourney: updated.journeys });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Server Error', error: err.message });
   }
@@ -124,7 +124,7 @@ exports.sendJourney = async (req, res) => {
     await JourneyDB.selectJourney(session.session_id, req.params.type);
 
     const sentJourney = updated.journeys.find((j) => j.type === req.params.type);
-    return res.status(200).json({ success: true, message: 'Journey sent', journey: sentJourney });
+    return res.status(200).json({ success: true, message: 'Journey sent', tathastujourney: sentJourney });
   } catch (err) {
     console.error('send journey error:', err);
     return res.status(500).json({ success: false, message: 'Server Error', error: err.message });

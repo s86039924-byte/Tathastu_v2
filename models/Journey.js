@@ -11,4 +11,4 @@ const JourneySchema = new mongoose.Schema(
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
 );
 
-module.exports = mongoose.model('Journey', JourneySchema);
+module.exports = mongoose.model('Journey', JourneySchema, 'tathastujourney');

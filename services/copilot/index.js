@@ -54,7 +54,7 @@ async function journeyCopilot({ sessionId, journeyType, message }) {
   const finalJourney = (updated ?? doc).journeys.find((j) => j.type === journeyType);
 
   await JourneyDB.appendChat(sessionId, { role: 'copilot', content: plan.summary, ts: nowIso() });
-  return { type: 'done', message: plan.summary || 'Done.', journey: finalJourney };
+  return { type: 'done', message: plan.summary || 'Done.', tathastujourney: finalJourney };
 }
 
 module.exports = { journeyCopilot };
