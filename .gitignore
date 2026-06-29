@@ -26,3 +26,6 @@ coverage/
 # runtime scratch / sample dumps
 services/journey.json
 .sixth/
+
+# reference-only Acadza backend extract (not part of this project)
+acadza-backend-userCase/

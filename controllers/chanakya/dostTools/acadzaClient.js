@@ -46,18 +46,6 @@ const fetchWithTimeout = async (
   }
 };
 
-const createMockDost = (payload) => {
-  const dostType = String(payload.bulkRequestType ?? payload['bulkRequestType'] ?? 'unknown');
-  const mockId = randomUUID().slice(0, 8);
-
-  return {
-    success: true,
-    dost_id: `mock_${dostType}_${mockId}`,
-    link: `https://acadza.com/dost/mock_${mockId}`,
-    error: null,
-  };
-};
-
 const parseAcadzaSuccess = (dostType, data) => {
   if (dostType === 'concept') {
     const urlshort = data.urlshort ?? data['urlshort'] ?? {};
@@ -123,11 +111,6 @@ const createDost = async (payload, opts = {}) => {
   const retryDelayMs = opts.retryDelayMs || ACADZA_RETRY_DELAY_MS;
 
   const dostType = String(payload.bulkRequestType ?? payload['bulkRequestType'] ?? 'unknown');
-
-  const mockMode = opts.mockMode ?? (process.env.ACADZA_MOCK_MODE === 'true');
-  if (mockMode) {
-    return createMockDost(payload);
-  }
 
   if (!apiUrl) {
     return {

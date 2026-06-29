@@ -14,9 +14,6 @@ const { createDost } = require('./dostTools/acadzaClient');
 const DEFAULT_ACADZA_USER_ID =
   process.env.ACADZA_DEFAULT_USER_ID || null;
 
-const ACADZA_MOCK_MODE =
-  process.env.ACADZA_MOCK_MODE === 'true';
-
 const classifyQuery = async (query, inputType = 'text') => {
   try {
     const result = await queryChecker(query, {
@@ -99,7 +96,6 @@ const callAcadzaApiForPayloads = async (payloads, opts = {}) => {
 const runChanakyaIntegrationFromProfile = async ({
   profile,
   acadzaUserId = null,
-  mockMode = ACADZA_MOCK_MODE,
   journeyIntent = null,
   ladderSpec = null,
   createDostNow = false,
@@ -123,9 +119,7 @@ const runChanakyaIntegrationFromProfile = async ({
   let acadzaResults = [];
 
   if (createDostNow) {
-    acadzaResults = await callAcadzaApiForPayloads(payloadResults, {
-      mockMode,
-    });
+    acadzaResults = await callAcadzaApiForPayloads(payloadResults);
   }
 
   return {

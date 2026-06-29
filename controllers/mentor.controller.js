@@ -98,7 +98,7 @@ exports.selectJourney = async (req, res) => {
   }
 };
 
-// POST .../:type/send  → create DOSTs on Acadza (mock if ACADZA_MOCK_MODE=true)
+// POST .../:type/send  → create DOSTs on Acadza (real API)
 exports.sendJourney = async (req, res) => {
   try {
     const session = await loadSession(req, res);
@@ -113,11 +113,9 @@ exports.sendJourney = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Journey has no cards to send' });
     }
 
-    // 1) call Acadza for each card's payload (mock or real, per ACADZA_MOCK_MODE)
+    // 1) call the real Acadza API for each card's payload
     const payloads = journey.dosts.map((d) => d.payload);
-    const results = await callAcadzaApiForPayloads(payloads, {
-      mockMode: process.env.ACADZA_MOCK_MODE === 'true',
-    });
+    const results = await callAcadzaApiForPayloads(payloads);
 
     // 2) persist results back onto the cards + mark journey sent
     const updated = await JourneyDB.recordSendResults(session.session_id, req.params.type, results);
