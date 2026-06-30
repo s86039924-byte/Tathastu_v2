@@ -28,6 +28,20 @@ const SessionDB = {
       .sort({ created_at: -1 })
       .lean();
   },
+
+  async listForMentor(mentorId) {
+    return Session.find({ mentor_id: mentorId })
+      .sort({ created_at: -1 })
+      .lean();
+  },
+
+  async setMentorApproved(sessionId, approved) {
+    return Session.findOneAndUpdate(
+      { session_id: sessionId },
+      { $set: { mentor_approved: Boolean(approved) } },
+      { new: true },
+    ).lean();
+  },
 };
 
 module.exports = { SessionDB };

@@ -14,6 +14,7 @@ const requireMentor = [
   },
 ];
 
+mentorRouter.get('/sessions', requireMentor, mentor.listSessions);
 mentorRouter.get('/sessions/:sessionId/journeys', requireMentor, mentor.getJourneys);
 mentorRouter.patch('/sessions/:sessionId/journeys/:type/dosts/:idx', requireMentor, mentor.editDostField);
 mentorRouter.post('/sessions/:sessionId/journeys/:type/dosts/:idx/remove', requireMentor, mentor.removeDost);

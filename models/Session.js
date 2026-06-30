@@ -11,6 +11,7 @@ const SessionSchema = new mongoose.Schema(
     ranked_results:      { type: Array, default: [] },
     client_session_uuid: { type: String, default: null },
     status:              { type: String, default: 'pending', index: true },
+    mentor_approved:     { type: Boolean, default: false },
   },
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
 );

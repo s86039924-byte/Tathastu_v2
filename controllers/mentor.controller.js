@@ -3,6 +3,7 @@ const { JourneyDB } = require('../db/journeys');
 const { StudentProfileDB } = require('../db/studentProfiles');
 const { callAcadzaApiForPayloads } = require('./chanakya/integration');
 const { journeyCopilot } = require('../services/copilot');
+const User = require('../models/User');
 
 // load session + ownership check.
 // On failure it sends the error response itself and returns null.
@@ -18,6 +19,40 @@ const loadSession = async (req, res) => {
     return null;
   }
   return session;
+};
+
+// GET /mentor/sessions  → sessions assigned to THIS teacher (mentor_id === token id)
+exports.listSessions = async (req, res) => {
+  try {
+    const teacherId = req.user.id || req.user._id || req.user.userId || req.user.user_id;
+    const sessions = await SessionDB.listForMentor(teacherId);
+
+    // join student NAME only (no phone) — skip student_ids that aren't real user _ids
+    const ids = [...new Set(
+      sessions.map((s) => String(s.student_id)).filter((id) => /^[0-9a-fA-F]{24}$/.test(id)),
+    )];
+    const users = ids.length
+      ? await User.find({ _id: { $in: ids } }).select('name').lean()
+      : [];
+    const nameById = {};
+    users.forEach((u) => { nameById[String(u._id)] = u.name; });
+
+    return res.status(200).json({
+      success: true,
+      count: sessions.length,
+      sessions: sessions.map((s) => ({
+        session_id: s.session_id,
+        student_id: s.student_id,
+        student_name: nameById[String(s.student_id)] ?? null,
+        original_query: s.original_query,
+        status: s.status,
+        mentorApproved: Boolean(s.mentor_approved),
+        created_at: s.created_at,
+      })),
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: err.message });
+  }
 };
 
 // GET /mentor/sessions/:sessionId/journeys  → the 3 journey drafts
@@ -123,8 +158,11 @@ exports.sendJourney = async (req, res) => {
     // 3) mark this journey as the selected/final one too
     await JourneyDB.selectJourney(session.session_id, req.params.type);
 
+    // 4) mentor sending = mentor approval → student can see it
+    await SessionDB.setMentorApproved(session.session_id, true);
+
     const sentJourney = updated.journeys.find((j) => j.type === req.params.type);
-    return res.status(200).json({ success: true, message: 'Journey sent', tathastujourney: sentJourney });
+    return res.status(200).json({ success: true, message: 'Journey sent', mentorApproved: true, tathastujourney: sentJourney });
   } catch (err) {
     console.error('send journey error:', err);
     return res.status(500).json({ success: false, message: 'Server Error', error: err.message });

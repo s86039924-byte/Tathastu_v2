@@ -48,6 +48,7 @@ exports.getPlan = async (req, res) => {
       return res.status(200).json({
         success: true,
         status: 'pending',
+        mentorApproved: Boolean(session.mentor_approved),
         message: 'Your mentor is still preparing your plan.',
       });
     }
@@ -56,6 +57,7 @@ exports.getPlan = async (req, res) => {
     return res.status(200).json({
       success: true,
       status: 'ready',
+      mentorApproved: Boolean(session.mentor_approved),
       session_id: session.session_id,
       query: session.original_query,
       plan: {
@@ -68,6 +70,62 @@ exports.getPlan = async (req, res) => {
             link: d.link,                  // ← the Acadza resource the student opens
             dost_id: d.dost_id,
           })),
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server Error', error: err.message });
+  }
+};
+
+// GET /student/sessions/:sessionId/journey  → the FULL sent journey (all card details)
+exports.getJourney = async (req, res) => {
+  try {
+    const session = await SessionDB.get(req.params.sessionId);
+    if (!session) {
+      return res.status(404).json({ success: false, message: 'Session not found' });
+    }
+    if (String(session.student_id) !== String(tokenId(req))) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const doc = await JourneyDB.get(session.session_id);
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Plan not ready yet' });
+    }
+
+    const journey =
+      doc.journeys.find((j) => j.sent) ||
+      doc.journeys.find((j) => j.selected);
+
+    if (!journey) {
+      return res.status(200).json({
+        success: true,
+        status: 'pending',
+        mentorApproved: Boolean(session.mentor_approved),
+        message: 'Your mentor is still preparing your plan.',
+      });
+    }
+
+    // full card details: keep payload + all card fields; drop the redundant
+    // original_payload backup to avoid doubling the response size
+    const dosts = (journey.dosts ?? []).map((d) => {
+      const { original_payload, ...rest } = d;
+      return rest;
+    });
+
+    return res.status(200).json({
+      success: true,
+      status: 'ready',
+      mentorApproved: Boolean(session.mentor_approved),
+      session_id: session.session_id,
+      query: session.original_query,
+      journey: {
+        type: journey.type,
+        alignment_score: journey.alignment_score,
+        recommended_rank: journey.recommended_rank,
+        selected: Boolean(journey.selected),
+        sent: Boolean(journey.sent),
+        dosts,
       },
     });
   } catch (err) {

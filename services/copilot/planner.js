@@ -44,7 +44,10 @@ RULES:
 3. If an action references a concept named in words -> set needs_concept_search:true and put the phrase in concept_query. Do NOT invent concept names.
 4. Normalise difficulty: hard/tough->hard, medium->moderate, easy/basic->easy.
 5. target_index refers to journey.dosts index. Resolve "the test"/"the assignment" by dost_type.
-6. Output JSON ONLY.
+6. PENDING CLARIFICATION: if a PENDING_QUESTION is shown below, you asked it earlier and are awaiting an answer.
+   - If the mentor's message ANSWERS it, use the CHAT history to COMPLETE the original request — emit the real actions, do NOT re-ask.
+   - If the message is a NEW/different instruction (a "mode switch"), DROP the pending question and handle the new instruction fresh.
+7. Output JSON ONLY.
 
 OUTPUT:
 {
@@ -56,7 +59,7 @@ OUTPUT:
 }
 `;
 
-async function callPlanner({ journey, mentorMessage, chatHistory = [] }) {
+async function callPlanner({ journey, mentorMessage, chatHistory = [], pending = null }) {
   // Send ONLY the knobs the planner reasons about — never full payloads
   // (practicePortion/formulaCart/original_payload). Keeps input ~300 tokens, not 5-10k.
   const slim = {
@@ -75,7 +78,8 @@ async function callPlanner({ journey, mentorMessage, chatHistory = [] }) {
         ?? d.payload?.meta?.conceptBasketData?.length,
     })),
   };
-  const user = `JOURNEY:\n${JSON.stringify(slim)}\n\nCHAT:\n${JSON.stringify(chatHistory.slice(-6))}\n\nMENTOR MESSAGE:\n"${mentorMessage}"`;
+  const pendingBlock = pending ? `\n\nPENDING_QUESTION (awaiting the mentor's answer): "${pending}"` : '';
+  const user = `JOURNEY:\n${JSON.stringify(slim)}\n\nCHAT:\n${JSON.stringify(chatHistory.slice(-6))}${pendingBlock}\n\nMENTOR MESSAGE:\n"${mentorMessage}"`;
 
   const resp = await getOpenAI().createChatCompletion(
     {

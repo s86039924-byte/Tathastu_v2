@@ -42,6 +42,7 @@ const EVERYTHING_MARKERS = [
   'all thungs', 'all things', 'everything', 'all of it', 'all of them',
   'all parts', 'every part', 'every thing', 'everythng', 'everythin',
   'all topic', 'all topics', 'all chapter', 'all chapters',
+  'all concept', 'all concepts', 'every concept', 'whole chapter',
 ];
 
 const isGreetingOrSmalltalk = (text) => {
@@ -531,6 +532,21 @@ const runFollowupTurn = async (
   let nextFocus = String(parsed.next_focus ?? '').trim() || null;
   let closingNote = String(parsed.closing_note ?? '').trim() || null;
   let reasoning = String(parsed.reasoning ?? '').trim();
+
+  // Student explicitly wants EVERYTHING (e.g. "help with all concepts") AND the
+  // required slots are already filled → stop digging for a specific subconcept,
+  // finish now and build a whole-chapter plan.
+  const wantsEverything =
+    String(slots.struggle_area ?? '').toLowerCase() === 'all' ||
+    containsEverythingMarker(originalQuery ?? '') ||
+    containsEverythingMarker(slots.student_voice ?? '');
+
+  if (wantsEverything && REQUIRED_SLOTS.every((k) => slots[k])) {
+    decision = 'ready';
+    nextQuestion = null;
+    nextFocus = null;
+    reasoning += ' | student wants all concepts & required slots filled — finishing';
+  }
 
   const softHit = turnsUsed >= SOFT_FOLLOWUP_TURNS;
   const hardHit = turnsUsed >= HARD_FOLLOWUP_TURNS;

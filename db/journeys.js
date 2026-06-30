@@ -117,6 +117,14 @@ const JourneyDB = {
       doc.markModified('copilot_messages');
     });
   },
+
+  // the clarification question the copilot is currently waiting an answer to
+  setCopilotPending(sessionId, pending) {
+    return mutate(sessionId, (doc) => {
+      doc.copilot_pending = pending ?? null;
+      doc.markModified('copilot_pending');
+    });
+  },
 };
 
 module.exports = { JourneyDB };

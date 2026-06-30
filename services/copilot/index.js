@@ -20,15 +20,18 @@ async function journeyCopilot({ sessionId, journeyType, message }) {
   journey.chapter = profile?.detected_topic ?? journey.dosts?.[0]?.payload?.meta?.chapter ?? '';
 
   const chat = doc.copilot_messages ?? [];
+  const pending = doc.copilot_pending || null;   // outstanding clarification, if any
 
-  // [1] PLAN
-  const plan = await callPlanner({ journey, mentorMessage: message, chatHistory: chat });
+  // [1] PLAN — planner sees the pending question and decides:
+  //     answer the pending request, OR treat this as a new request (mode switch).
+  const plan = await callPlanner({ journey, mentorMessage: message, chatHistory: chat, pending });
 
   // log the mentor turn
   await JourneyDB.appendChat(sessionId, { role: 'mentor', content: message, ts: nowIso() });
 
-  // [2] slot-filling: not enough info → ask
+  // [2] slot-filling: not enough info → ask (and REMEMBER the question)
   if (plan.needs_clarification) {
+    await JourneyDB.setCopilotPending(sessionId, plan.clarification || 'Could you clarify?');
     await JourneyDB.appendChat(sessionId, { role: 'copilot', content: plan.clarification, examples: plan.examples, ts: nowIso() });
     return { type: 'ask', message: plan.clarification, examples: plan.examples ?? [] };
   }
@@ -45,11 +48,13 @@ async function journeyCopilot({ sessionId, journeyType, message }) {
   if (missingCount) {
     const clarification = 'How many questions should the assignment have?';
     const examples = ['15 questions', '20, mostly numericals'];
+    await JourneyDB.setCopilotPending(sessionId, clarification);
     await JourneyDB.appendChat(sessionId, { role: 'copilot', content: clarification, examples, ts: nowIso() });
     return { type: 'ask', message: clarification, examples };
   }
 
-  // [3] apply
+  // [3] resolved (answered the pending request OR a new request) → clear pending, apply
+  await JourneyDB.setCopilotPending(sessionId, null);
   const updated = await applyActions(sessionId, journeyType, plan.actions ?? [], profile, journey);
   const finalJourney = (updated ?? doc).journeys.find((j) => j.type === journeyType);
 

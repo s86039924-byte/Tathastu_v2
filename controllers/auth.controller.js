@@ -293,6 +293,29 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// GET /mentors — public list of mentors for students to choose from (NO phone)
+exports.getMentors = async (req, res) => {
+  try {
+    const mentors = await User.find({ role: 'teacher' })
+      .select('name meta createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      count: mentors.length,
+      mentors: mentors.map((m) => ({
+        mentor_id: m._id,     // pass this as mentorId in process-query
+        name: m.name,
+        meta: m.meta ?? {},   // e.g. subject/expertise if you store it
+      })),
+    });
+  } catch (e) {
+    console.error('getMentors error:', e);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
 // POST /process-query
 exports.processQuery = async (req, res) => {
   try {
@@ -493,6 +516,7 @@ exports.processQuery = async (req, res) => {
       prior_signals: priorSignals,
       prior_chapters: priorChapters,
       pending_focus: focus,
+      pending_question: nextQuestion,   // remember the question we asked
     });
 
     console.log('Follow-up session saved successfully');
@@ -570,9 +594,11 @@ exports.continueFollowup = async (req, res) => {
 
     state.history = Array.isArray(state.history) ? state.history : [];
 
-    // 2. Add current answer to history
+    // 2. Add current answer to history.
+    //    If the client didn't echo the question, fall back to the one the
+    //    server actually asked (pending_question) so history stays complete.
     state.history.push({
-      q: question ?? '',
+      q: question || state.pending_question || '',
       a: answer.trim() || 'not specified',
       focus: pendingFocus,
     });
@@ -603,8 +629,9 @@ exports.continueFollowup = async (req, res) => {
       closingNote,
     });
 
-    // 4. Update pending focus in runtime memory
+    // 4. Update pending focus + remember the next question we're about to ask
     state.pending_focus = enough ? null : focus ?? null;
+    state.pending_question = enough ? null : nextQuestion ?? null;
 
     await saveRuntimeFollowup(tempSessionId, state);
 

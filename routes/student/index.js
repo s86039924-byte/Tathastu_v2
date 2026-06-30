@@ -16,5 +16,6 @@ const requireStudent = [
 
 studentRouter.get('/sessions', requireStudent, student.listSessions);
 studentRouter.get('/sessions/:sessionId/plan', requireStudent, student.getPlan);
+studentRouter.get('/sessions/:sessionId/journey', requireStudent, student.getJourney);
 
 module.exports = { studentRouter };
